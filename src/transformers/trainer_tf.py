@@ -93,6 +93,7 @@ class TFTrainer:
         self.gradient_accumulator = GradientAccumulator()
         self.global_step = 0
         self.epoch_logging = 0
+        self.eval_loss = tf.keras.metrics.Sum()
         if "prediction_loss_only" in kwargs:
             warnings.warn(
                 "Passing `prediction_loss_only` as a keyword argument is deprecated and won't be possible in a future version. Use `args.prediction_loss_only` instead.",
@@ -317,7 +318,6 @@ class TFTrainer:
 
         label_ids: np.ndarray = None
         preds: np.ndarray = None
-        self.eval_loss = tf.keras.metrics.Sum()
 
         # Reset the past mems state at the beginning of the evaluation if necessary.
         if self.args.past_index >= 0:
@@ -366,7 +366,8 @@ class TFTrainer:
             metrics = {}
 
         metrics["eval_loss"] = self.eval_loss.result().numpy() / steps
-
+        self.eval_loss.reset_states()
+        
         for key in list(metrics.keys()):
             if not key.startswith("eval_"):
                 metrics[f"eval_{key}"] = metrics.pop(key)
